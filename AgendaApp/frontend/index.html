@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Agenda Pro</h1>
+            <p>Organiza tus tareas de manera eficiente y profesional</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Formulario de nueva tarea -->
+            <section class="task-form">
+                <div class="form-group">
+                    <input type="text" id="taskTitle" placeholder="¿Qué necesitas hacer?" maxlength="100">
+                    <input type="date" id="taskDate">
+                    <button class="btn btn-primary" onclick="addTask()">Agregar</button>
+                </div>
+            </section>
+
+            <!-- Filtros -->
+            <section class="filters">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="filterTasks('all')">Todas</button>
+                    <button class="filter-tab" onclick="filterTasks('pending')">Pendientes</button>
+                    <button class="filter-tab" onclick="filterTasks('completed')">Completadas</button>
+                </div>
+            </section>
+
+            <!-- Lista de tareas -->
+            <section class="tasks-section">
+                <h2>Tareas</h2>
+                <div id="tasksContainer">
+                    <div class="loading">Cargando tareas...</div>
+                </div>
+            </section>
+        </main>
+
+        <aside class="sidebar">
+            <!-- Estadísticas -->
+            <section class="stats">
+                <h3>Estadísticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalTasks">0</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="completedTasks">0</span>
+                        <span class="stat-label">Completadas</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="pendingTasks">0</span>
+                        <span class="stat-label">Pendientes</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mini calendario -->
+            <section class="mini-calendar">
+                <h3>Calendario</h3>
+                <div class="calendar-header">
+                    <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
+                    <span class="calendar-month" id="currentMonth"></span>
+                    <button class="calendar-nav" onclick="changeMonth(1)">›</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </section>
+
+            <!-- Estado de conexión -->
+            <div class="connection-status" id="connectionStatus">
+                Verificando conexión...
+            </div>
+        </aside>
+    </div>
+
+    <!-- Status bar flotante -->
+    <div class="status-bar" id="statusBar" style="display: none;"></div>
+
+    <!-- Configuración dinámica del backend -->
+    <script src="config.js"></script>
+    <!-- Aplicación principal -->
+    <script src="app.js"></script>
+</body>
+</html>

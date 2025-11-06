@@ -1,0 +1,18 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agendaapp.fullname" . }}-mongodb
+  labels:
+    {{- include "agendaapp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  type: {{ .Values.mongodb.service.type }}
+  ports:
+    - port: {{ .Values.mongodb.service.port }}
+      targetPort: {{ .Values.mongodb.service.targetPort }}
+      protocol: TCP
+      name: mongodb
+  selector:
+    {{- include "agendaapp.mongodb.selectorLabels" . | nindent 4 }}
+{{- end }}

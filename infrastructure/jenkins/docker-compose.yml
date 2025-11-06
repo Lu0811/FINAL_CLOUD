@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jenkins-iac
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      # Persistir datos de Jenkins
+      - jenkins_home:/var/jenkins_home
+      
+      # Montar directorio de infraestructura para que Jenkins pueda acceder a los archivos .tf
+      - ../opentofu:/workspace/infrastructure/opentofu
+      
+      # Montar directorio de la aplicación AgendaApp
+      - ../../AgendaApp:/workspace/AgendaApp
+      
+      # Montar credenciales GCP
+      - ../jenkins-iac-credentials.json:/var/secrets/gcp/key.json:ro
+      
+      # Script de inicialización para crear usuario admin
+      - ./init.groovy:/var/jenkins_home/init.groovy.d/basic-security.groovy:ro
+      
+      # Montar socket de Docker para builds (REQUERIDO para construir imágenes)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JENKINS_ADMIN_ID=admin
+      - JENKINS_ADMIN_PASSWORD=admin123
+      - GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/gcp/key.json
+    user: root  # Necesario para acceder al socket de Docker
+
+volumes:
+  jenkins_home:
+    driver: local

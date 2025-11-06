@@ -1,0 +1,161 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.40">
+  <description>Pipeline automático para aplicar cambios IaC con OpenTofu</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.93">
+    <script><![CDATA[pipeline {
+    agent any
+    
+    environment {
+        GCP_PROJECT = 'kubernetes-474008'
+        GCP_REGION = 'us-central1'
+        TOFU_DIR = '/workspace/infrastructure/opentofu'
+        CLOUDSDK_PYTHON = '/usr/bin/python3'
+    }
+    
+    stages {
+        stage('🔧 Preparar Entorno') {
+            steps {
+                echo '=== Configurando entorno para OpenTofu ==='
+                sh '''
+                    echo "📦 Verificando herramientas instaladas..."
+                    tofu version || echo "⚠️  OpenTofu no encontrado"
+                    gcloud version || echo "⚠️  gcloud no encontrado"
+                    echo ""
+                    echo "✅ Entorno preparado"
+                '''
+            }
+        }
+        
+        stage('🔐 Autenticar GCP') {
+            steps {
+                echo '=== Autenticando con Google Cloud ==='
+                withCredentials([file(credentialsId: 'gcp-jenkins-iac-credentials', variable: 'GCP_KEY_FILE')]) {
+                    sh '''
+                        echo "🔑 Activando Service Account..."
+                        gcloud auth activate-service-account --key-file=$GCP_KEY_FILE
+                        gcloud config set project ${GCP_PROJECT}
+                        
+                        echo ""
+                        echo "✅ Autenticación exitosa"
+                        echo "📋 Proyecto activo: ${GCP_PROJECT}"
+                    '''
+                }
+            }
+        }
+        
+        stage('📥 Clonar Repositorio IaC') {
+            steps {
+                echo '=== Obteniendo código de infraestructura ==='
+                sh '''
+                    # En un entorno real, clonarías desde Git
+                    # git clone <repo-url> ${TOFU_DIR}
+                    
+                    echo "📂 Directorio de trabajo: ${TOFU_DIR}"
+                    echo "✅ Código IaC obtenido"
+                '''
+            }
+        }
+        
+        stage('🔄 Inicializar OpenTofu') {
+            steps {
+                echo '=== Inicializando OpenTofu ==='
+                dir("${TOFU_DIR}") {
+                    sh '''
+                        tofu init -reconfigure
+                        echo ""
+                        echo "✅ OpenTofu inicializado"
+                    '''
+                }
+            }
+        }
+        
+        stage('🔍 Validar Configuración') {
+            steps {
+                echo '=== Validando sintaxis de archivos HCL ==='
+                dir("${TOFU_DIR}") {
+                    sh '''
+                        tofu validate
+                        echo ""
+                        echo "✅ Configuración validada correctamente"
+                    '''
+                }
+            }
+        }
+        
+        stage('📊 Generar Plan') {
+            steps {
+                echo '=== Generando plan de cambios ==='
+                dir("${TOFU_DIR}") {
+                    sh '''
+                        tofu plan -var-file=environments/dev/terraform.tfvars -out=tfplan
+                        echo ""
+                        echo "✅ Plan generado y guardado como 'tfplan'"
+                    '''
+                }
+            }
+        }
+        
+        stage('⚡ Aplicar Cambios') {
+            steps {
+                echo '=== Aplicando cambios de infraestructura ==='
+                dir("${TOFU_DIR}") {
+                    sh '''
+                        echo "🚀 Ejecutando tofu apply..."
+                        tofu apply -auto-approve tfplan
+                        echo ""
+                        echo "✅ Infraestructura actualizada exitosamente"
+                    '''
+                }
+            }
+        }
+        
+        stage('📋 Mostrar Outputs') {
+            steps {
+                echo '=== Mostrando información de infraestructura creada ==='
+                dir("${TOFU_DIR}") {
+                    sh '''
+                        echo "📊 Outputs de la infraestructura:"
+                        echo ""
+                        tofu output
+                        echo ""
+                        echo "✅ Información de infraestructura disponible"
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '✅ ¡Infraestructura desplegada exitosamente!'
+            echo ''
+            echo '📋 Resumen del Despliegue:'
+            echo '   ✓ Autenticación GCP completada'
+            echo '   ✓ OpenTofu inicializado'
+            echo '   ✓ Plan generado y validado'
+            echo '   ✓ Cambios aplicados automáticamente'
+            echo ''
+            echo '🎯 Infraestructura lista para uso'
+        }
+        failure {
+            echo '❌ Error al desplegar infraestructura'
+            echo '💡 Revisa los logs para identificar el problema'
+            echo ''
+            echo '🔧 Posibles causas:'
+            echo '   • Credenciales GCP inválidas'
+            echo '   • Errores en sintaxis HCL'
+            echo '   • Recursos ya existentes'
+            echo '   • Cuotas de GCP excedidas'
+        }
+        always {
+            echo "=== Pipeline IaC Build #${BUILD_NUMBER} finalizado ==="
+        }
+    }
+}]]></script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

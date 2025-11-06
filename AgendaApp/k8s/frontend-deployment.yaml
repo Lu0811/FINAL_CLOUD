@@ -1,0 +1,644 @@
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: BACKEND_URL
+          value: "http://34.41.85.14:5000"
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            # Generar config.js dinámicamente con la URL del backend
+            BACKEND_URL=${BACKEND_URL:-"http://backend-postgres-service:5000"}
+            
+            cat > /usr/share/nginx/html/config.js << EOF
+            window.BACKEND_SERVICE_URL = '$BACKEND_URL';
+            
+            function getBackendURL() {
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    return 'http://localhost:5000';
+                }
+                return window.BACKEND_SERVICE_URL;
+            }
+            
+            const API_BASE_URL = getBackendURL();
+            EOF
+            cat > /usr/share/nginx/html/index.html << 'EOF'
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>AgendaApp - Gestión de Tareas</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        min-height: 100vh;
+                        color: #333;
+                    }
+
+                    .container {
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        min-height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                    }
+
+                    header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        background: rgba(255, 255, 255, 0.95);
+                        padding: 30px;
+                        border-radius: 15px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                    }
+
+                    header h1 {
+                        font-size: 2.5rem;
+                        color: #4a5568;
+                        margin-bottom: 10px;
+                    }
+
+                    header p {
+                        color: #718096;
+                        font-size: 1.1rem;
+                    }
+
+                    main {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 25px;
+                    }
+
+                    .task-form {
+                        background: rgba(255, 255, 255, 0.95);
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .task-form h2 {
+                        color: #4a5568;
+                        margin-bottom: 20px;
+                        font-size: 1.5rem;
+                    }
+
+                    .form-group {
+                        display: flex;
+                        gap: 15px;
+                        align-items: center;
+                    }
+
+                    #taskTitle {
+                        flex: 1;
+                        padding: 15px 20px;
+                        border: 2px solid #e2e8f0;
+                        border-radius: 10px;
+                        font-size: 1rem;
+                        transition: all 0.3s ease;
+                    }
+
+                    #taskTitle:focus {
+                        outline: none;
+                        border-color: #667eea;
+                        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    }
+
+                    #addTaskBtn {
+                        padding: 15px 30px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    }
+
+                    #addTaskBtn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+                    }
+
+                    .tasks-section {
+                        background: rgba(255, 255, 255, 0.95);
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                        flex: 1;
+                    }
+
+                    .tasks-section h2 {
+                        color: #4a5568;
+                        margin-bottom: 20px;
+                        font-size: 1.5rem;
+                    }
+
+                    #tasksContainer {
+                        min-height: 200px;
+                    }
+
+                    #loadingMessage {
+                        text-align: center;
+                        color: #718096;
+                        font-style: italic;
+                        padding: 40px 0;
+                    }
+
+                    .task-item {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 15px 20px;
+                        margin-bottom: 10px;
+                        background: #f7fafc;
+                        border-radius: 10px;
+                        border-left: 4px solid #667eea;
+                        transition: all 0.3s ease;
+                    }
+
+                    .task-item:hover {
+                        transform: translateX(5px);
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .task-item.completed {
+                        border-left-color: #48bb78;
+                        background: #f0fff4;
+                    }
+
+                    .task-item.completed .task-title {
+                        text-decoration: line-through;
+                        color: #718096;
+                    }
+
+                    .task-content {
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        flex: 1;
+                    }
+
+                    .task-checkbox {
+                        width: 20px;
+                        height: 20px;
+                        cursor: pointer;
+                    }
+
+                    .task-title {
+                        font-size: 1.1rem;
+                        color: #4a5568;
+                    }
+
+                    .task-actions {
+                        display: flex;
+                        gap: 10px;
+                    }
+
+                    .delete-btn {
+                        padding: 8px 15px;
+                        background: #e53e3e;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 0.9rem;
+                        transition: all 0.3s ease;
+                    }
+
+                    .delete-btn:hover {
+                        background: #c53030;
+                        transform: translateY(-1px);
+                    }
+
+                    .stats {
+                        display: flex;
+                        justify-content: space-around;
+                        background: rgba(255, 255, 255, 0.95);
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .stat-item {
+                        text-align: center;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 5px;
+                    }
+
+                    .stat-number {
+                        font-size: 2rem;
+                        font-weight: 700;
+                        color: #667eea;
+                    }
+
+                    .stat-label {
+                        color: #718096;
+                        font-size: 0.9rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+
+                    footer {
+                        text-align: center;
+                        margin-top: 30px;
+                        padding: 20px;
+                        color: rgba(255, 255, 255, 0.8);
+                    }
+
+                    .empty-state {
+                        text-align: center;
+                        padding: 40px 20px;
+                        color: #718096;
+                    }
+
+                    .empty-state h3 {
+                        font-size: 1.3rem;
+                        margin-bottom: 10px;
+                    }
+
+                    @media (max-width: 600px) {
+                        .container {
+                            padding: 15px;
+                        }
+                        
+                        .form-group {
+                            flex-direction: column;
+                            align-items: stretch;
+                        }
+                        
+                        #addTaskBtn {
+                            width: 100%;
+                        }
+                        
+                        .task-item {
+                            flex-direction: column;
+                            align-items: flex-start;
+                            gap: 10px;
+                        }
+                        
+                        .task-actions {
+                            align-self: flex-end;
+                        }
+                        
+                        .stats {
+                            flex-direction: column;
+                            gap: 20px;
+                        }
+                    }
+
+                    @keyframes fadeIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .task-item {
+                        animation: fadeIn 0.3s ease;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <header>
+                        <h1>📋 AgendaApp</h1>
+                        <p>Gestiona tus tareas de manera eficiente</p>
+                    </header>
+
+                    <main>
+                        <section class="task-form">
+                            <h2>Nueva Tarea</h2>
+                            <div class="form-group">
+                                <input type="text" id="taskTitle" placeholder="Escribe tu tarea aquí..." required>
+                                <button id="addTaskBtn">Agregar Tarea</button>
+                            </div>
+                        </section>
+
+                        <section class="tasks-section">
+                            <h2>Mis Tareas</h2>
+                            <div id="tasksContainer">
+                                <div id="loadingMessage">Cargando tareas...</div>
+                            </div>
+                        </section>
+
+                        <section class="stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalTasks">0</span>
+                                <span class="stat-label">Total</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="completedTasks">0</span>
+                                <span class="stat-label">Completadas</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="pendingTasks">0</span>
+                                <span class="stat-label">Pendientes</span>
+                            </div>
+                        </section>
+                    </main>
+
+                    <footer>
+                        <p>AgendaApp - Luciana Huaman</p>
+                    </footer>
+                </div>
+
+                <script src="config.js"></script>
+                <script>
+                    let tasks = [];
+
+                    const taskTitleInput = document.getElementById('taskTitle');
+                    const addTaskBtn = document.getElementById('addTaskBtn');
+                    const tasksContainer = document.getElementById('tasksContainer');
+                    const totalTasksElement = document.getElementById('totalTasks');
+                    const completedTasksElement = document.getElementById('completedTasks');
+                    const pendingTasksElement = document.getElementById('pendingTasks');
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                        console.log('🚀 AgendaApp iniciada');
+                        setupEventListeners();
+                        loadTasks();
+                    });
+
+                    function setupEventListeners() {
+                        addTaskBtn.addEventListener('click', handleAddTask);
+                        taskTitleInput.addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') {
+                                handleAddTask();
+                            }
+                        });
+                    }
+
+                    async function loadTasks() {
+                        try {
+                            showLoadingMessage('Cargando tareas...');
+                            
+                            const response = await fetch(`${API_BASE_URL}/tasks`);
+                            
+                            if (!response.ok) {
+                                throw new Error(`Error HTTP: ${response.status}`);
+                            }
+                            
+                            const data = await response.json();
+                            tasks = data || [];
+                            
+                            console.log(`📋 Cargadas ${tasks.length} tareas`);
+                            renderTasks();
+                            updateStats();
+                            
+                        } catch (error) {
+                            console.error('❌ Error al cargar tareas:', error);
+                            showErrorMessage('No se pudieron cargar las tareas. ¿Está el backend funcionando?');
+                        }
+                    }
+
+                    async function handleAddTask() {
+                        const title = taskTitleInput.value.trim();
+                        
+                        if (!title) {
+                            alert('Por favor, escribe el título de la tarea');
+                            return;
+                        }
+                        
+                        try {
+                            const newTask = {
+                                title: title,
+                                done: false
+                            };
+                            
+                            const response = await fetch(`${API_BASE_URL}/tasks`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(newTask)
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Error HTTP: ${response.status}`);
+                            }
+                            
+                            const result = await response.json();
+                            console.log('✅ Tarea agregada:', result);
+                            
+                            taskTitleInput.value = '';
+                            await loadTasks();
+                            
+                        } catch (error) {
+                            console.error('❌ Error al agregar tarea:', error);
+                            alert('No se pudo agregar la tarea. Verifica la conexión con el backend.');
+                        }
+                    }
+
+                    async function toggleTask(taskId, currentDone) {
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    done: !currentDone
+                                })
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Error HTTP: ${response.status}`);
+                            }
+                            
+                            const result = await response.json();
+                            console.log('🔄 Tarea actualizada:', result);
+                            
+                            await loadTasks();
+                            
+                        } catch (error) {
+                            console.error('❌ Error al actualizar tarea:', error);
+                            alert('No se pudo actualizar la tarea.');
+                        }
+                    }
+
+                    async function deleteTask(taskId) {
+                        if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+                            return;
+                        }
+                        
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+                                method: 'DELETE'
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Error HTTP: ${response.status}`);
+                            }
+                            
+                            const result = await response.json();
+                            console.log('🗑️ Tarea eliminada:', result);
+                            
+                            await loadTasks();
+                            
+                        } catch (error) {
+                            console.error('❌ Error al eliminar tarea:', error);
+                            alert('No se pudo eliminar la tarea.');
+                        }
+                    }
+
+                    function renderTasks() {
+                        if (tasks.length === 0) {
+                            showEmptyState();
+                            return;
+                        }
+                        
+                        const tasksHTML = tasks.map(task => createTaskHTML(task)).join('');
+                        tasksContainer.innerHTML = tasksHTML;
+                    }
+
+                    function createTaskHTML(task) {
+                        const completedClass = task.done ? 'completed' : '';
+                        const checkedAttribute = task.done ? 'checked' : '';
+                        
+                        return `
+                            <div class="task-item ${completedClass}">
+                                <div class="task-content">
+                                    <input 
+                                        type="checkbox" 
+                                        class="task-checkbox" 
+                                        ${checkedAttribute}
+                                        onchange="toggleTask('${task.id}', ${task.done})"
+                                    >
+                                    <span class="task-title">${escapeHTML(task.title)}</span>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="delete-btn" onclick="deleteTask('${task.id}')">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    function showEmptyState() {
+                        tasksContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>🎉 ¡No tienes tareas pendientes!</h3>
+                                <p>Agrega una nueva tarea para comenzar</p>
+                            </div>
+                        `;
+                    }
+
+                    function showLoadingMessage(message) {
+                        tasksContainer.innerHTML = `
+                            <div id="loadingMessage">${message}</div>
+                        `;
+                    }
+
+                    function showErrorMessage(message) {
+                        tasksContainer.innerHTML = `
+                            <div style="text-align: center; color: #e53e3e; padding: 40px 0;">
+                                <h3>⚠️ Error</h3>
+                                <p>${message}</p>
+                                <button onclick="loadTasks()" style="margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                    Reintentar
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    function updateStats() {
+                        const total = tasks.length;
+                        const completed = tasks.filter(task => task.done).length;
+                        const pending = total - completed;
+                        
+                        totalTasksElement.textContent = total;
+                        completedTasksElement.textContent = completed;
+                        pendingTasksElement.textContent = pending;
+                    }
+
+                    function escapeHTML(text) {
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    }
+
+                    async function testBackendConnection() {
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/health`);
+                            if (response.ok) {
+                                console.log('✅ Backend conectado correctamente');
+                                return true;
+                            }
+                        } catch (error) {
+                            console.log('❌ Backend no disponible:', error.message);
+                            return false;
+                        }
+                    }
+
+                    window.addEventListener('load', async function() {
+                        const isConnected = await testBackendConnection();
+                        if (!isConnected) {
+                            showErrorMessage('No se puede conectar al backend. Verifica que esté ejecutándose.');
+                        }
+                    });
+                </script>
+            </body>
+            </html>
+            EOF
+            nginx -g 'daemon off;'
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+
+---
+# Frontend Service (LoadBalancer para acceso externo)
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  labels:
+    app: frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: frontend
