@@ -32,13 +32,15 @@ jobs:
     
     - name: Build Backend Image
       run: |
-        cd AgendaApp/backend
-        docker build -t us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/backend:${{ github.sha }} .
+        cd AgendaApp/backend  
+        echo "Building backend with timestamp: $(date)"
+        docker build --no-cache -t us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/backend:${{ github.sha }} .
     
     - name: Build Frontend Image
       run: |
         cd AgendaApp/frontend
-        docker build -t us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }} .
+        echo "Building frontend with timestamp: $(date)"
+        docker build --no-cache -t us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }} .
     
     - name: Push Images
       run: |
