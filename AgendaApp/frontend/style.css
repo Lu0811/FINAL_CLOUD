@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #fafafa;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     color: #1a1a1a;
     line-height: 1.6;
@@ -23,32 +23,40 @@ body {
     gap: 40px;
 }
 
-/* Header minimalista */
+/* Header colorido */
 header {
     grid-column: 1 / -1;
     margin-bottom: 20px;
-    padding: 20px 0;
-    border-bottom: 1px solid #e5e5e5;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    text-align: center;
 }
 
 header h1 {
-    font-size: 2rem;
-    color: #1a1a1a;
-    font-weight: 600;
+    font-size: 2.5rem;
+    color: #4a5568;
+    font-weight: 700;
     letter-spacing: -0.02em;
+    margin-bottom: 10px;
 }
 
 header p {
-    color: #666;
-    font-size: 0.95rem;
-    margin-top: 5px;
-    font-weight: 400;
+    color: #718096;
+    font-size: 1.1rem;
+    font-weight: 500;
 }
 
 /* Sidebar */
 .sidebar {
-    background: #fff;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     padding: 24px;
     height: fit-content;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -64,11 +72,12 @@ header p {
 
 /* Main content */
 .main-content {
-    background: #fff;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
     padding: 32px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e5e5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 /* Formulario de nueva tarea */
@@ -123,13 +132,15 @@ header p {
 }
 
 .btn-primary {
-    background: #1a1a1a;
+    background: #667eea;
     color: #fff;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .btn-primary:hover {
-    background: #333;
-    transform: translateY(-1px);
+    background: #5a6fd8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
 }
 
 .btn-secondary {
@@ -255,11 +266,13 @@ header p {
 }
 
 .stat-card {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.95);
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 15px;
     text-align: center;
-    border: 1px solid #f0f0f0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .stat-number {
