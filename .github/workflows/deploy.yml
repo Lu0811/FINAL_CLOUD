@@ -22,6 +22,8 @@ jobs:
     
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v1
+      with:
+        install_components: 'gke-gcloud-auth-plugin'
     
     - name: Configure Docker for Artifact Registry
       run: |
@@ -44,18 +46,24 @@ jobs:
         docker push us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }}
     
     - name: Deploy to GKE
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
-        gcloud container clusters get-credentials agendaapp-cluster --region us-central1
+        echo "Getting GKE credentials..."
+        gcloud container clusters get-credentials agendaapp-cluster --region us-central1 --project kubernetes-474008
         
-        # Update backend
-        kubectl set image deployment/backend-postgres backend=us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/backend:${{ github.sha }}
+        echo "Verifying kubectl connection..."
+        kubectl get nodes
         
-        # Update frontend  
-        kubectl set image deployment/frontend frontend=us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }}
+        echo "Updating backend deployment..."
+        kubectl set image deployment/backend-postgres backend=us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/backend:${{ github.sha }} --record
         
-        # Wait for rollout
-        kubectl rollout status deployment/backend-postgres
-        kubectl rollout status deployment/frontend
+        echo "Updating frontend deployment..."
+        kubectl set image deployment/frontend frontend=us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }} --record
+        
+        echo "Waiting for rollout to complete..."
+        kubectl rollout status deployment/backend-postgres --timeout=300s
+        kubectl rollout status deployment/frontend --timeout=300s
     
     - name: Verify Deployment
       run: |
