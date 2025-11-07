@@ -17,20 +17,12 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: nginx:alpine
+        image: us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:latest
         ports:
         - containerPort: 80
         env:
         - name: BACKEND_URL
           value: "http://34.41.85.14:5000"
-        command: ["/bin/sh"]
-        args:
-          - -c
-          - |
-            # Generar config.js dinámicamente con la URL del backend
-            BACKEND_URL=${BACKEND_URL:-"http://backend-postgres-service:5000"}
-            
-            cat > /usr/share/nginx/html/config.js << EOF
             window.BACKEND_SERVICE_URL = '$BACKEND_URL';
             
             function getBackendURL() {

@@ -64,7 +64,10 @@ jobs:
         echo "Updating backend deployment..."
         kubectl set image deployment/backend-postgres backend=us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/backend:${{ github.sha }} --record
         
-        echo "Updating frontend deployment..."
+        echo "Applying clean frontend deployment..."
+        kubectl apply -f AgendaApp/k8s/frontend-deployment-clean.yaml
+        
+        echo "Updating frontend deployment with new image..."
         kubectl set image deployment/frontend frontend=us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }} --record
         
         echo "Waiting for rollout to complete..."
