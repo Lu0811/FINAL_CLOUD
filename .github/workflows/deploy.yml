@@ -40,6 +40,10 @@ jobs:
       run: |
         cd AgendaApp/frontend
         echo "Building frontend with timestamp: $(date)"
+        echo "Current directory contents:"
+        ls -la
+        echo "index.html content:"
+        head -15 index.html
         docker build --no-cache -t us-central1-docker.pkg.dev/kubernetes-474008/agendaapp/frontend:${{ github.sha }} .
     
     - name: Push Images
