@@ -14,9 +14,9 @@ function getBackendURL() {
         return 'http://localhost:5000';
     }
     
-    // En producción, obtener la IP externa del backend
-    // Esta será inyectada por el ConfigMap de Kubernetes
-    return window.BACKEND_SERVICE_URL || 'http://backend-postgres-service:5000';
+    // En producción, usar la IP externa del backend LoadBalancer
+    // IP externa del servicio backend-postgres-service
+    return window.BACKEND_SERVICE_URL || 'http://34.41.85.14:5000';
 }
 
 // Exportar la URL configurada
